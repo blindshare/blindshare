@@ -12,7 +12,7 @@ class BlindShare(object):
         a = []
         a.append("<HTML><TITLE>Blind Share</TITLE>")
         a.append("<BODY>")
-        a.append("<H1>Blind Share - ver 0.2</H1>")
+        a.append("<H1>Blind Share - ver 0.3</H1>")
         a.append("<HR>")
         a.append("<form action=\"getHash\" method=\"POST\">Please insert hash: <input type=\"text\" name=\"item\" /><input value=\"get\" type=\"submit\" /></form>")
         return a
@@ -20,47 +20,44 @@ class BlindShare(object):
     @cherrypy.expose
     def getHash(self, item=None):
         if item:
-            print(str(len(item)) + "size")
             if (len(item) > 64):
                 return self.error(404) 
             else:
                 try:
-                    with sqlite3.connect('blinds.db') as con:
+                    myDB = os.path.join(cherrypy.request.app.config['file_path']['db'], 'blinds.db')
+                    with sqlite3.connect(myDB) as con:
                         file, = con.execute("SELECT url FROM hashtable WHERE hash=?", [item]).fetchone()
-                        print("------------------")
                         path = os.path.join(cherrypy.request.app.config['file_path']['path'], file)
-                        print("file:" + file)
                         return cherrypy.lib.static.serve_file(path, 'application/x-download', 'attachment', file)
-#                        return self.download(item, file)
-                except:
-                    e = sys.exc_info()
-                    print(e)
+                except TypeError:
+                    return self.error(404)
+                except sqlite3.OperationalError:
+                    return self.error(601)
         else:
             return self.error(404)
-
-#    @cherrypy.expose
-#    def download(self, item, file):
-#        if (file == ""):
-#            return self.error(404)
-#        else:
-#            suffix = os.path.splitext(file)
-#            newFileName = item + suffix[-1]
-#            path = os.path.join(cherrypy.request.app.config['file_path']['path'], file) 
-#            print(path)
-#            return cherrypy.lib.static.serve_file(path, 'application/x-download', 'attachment', newFileName)
-
 
     @cherrypy.expose
     def error(self, err):
         if (err == 404):
-            fnf = []
-            fnf.append("<HTML><TITLE>Blind Share</TITLE>")
-            fnf.append("<H1>404 - File not Found</H1>")
-            fnf.append("<P>")
-            fnf.append("Your item was not found or you link has expired")
-            fnf.append("<HR>")
-            fnf.append("<HTML><form action=\"index\" method=\"POST\"><input value=\"back\" type=\"submit\" /></form>")
-            return fnf
+            erm = []
+            erm.append("<HTML><TITLE>Blind Share</TITLE>")
+            erm.append("<H1>404 - File not Found</H1>")
+            erm.append("<P>")
+            erm.append("Your item was not found or you link has expired")
+            erm.append("<HR>")
+            erm.append("<HTML><form action=\"index\" method=\"POST\"><input value=\"back\" type=\"submit\" /></form>")
+            return erm
+
+        if (err == 601):
+            erm = []
+            erm.append("<HTML><TITLE>Blind Share</TITLE>")
+            erm.append("<H1>601 - Database Error</H1>")
+            erm.append("<P>")
+            erm.append("The Database you like to reach is currently not available or doesn't accept any new connections")
+            erm.append("<P>")
+            erm.append("<u>Please contact your DBA and try again later</u>")
+            erm.append("<HR>")
+            return erm
 
     @cherrypy.expose
     def default(self):

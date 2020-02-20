@@ -12,7 +12,7 @@ class BlindShareAdmin(object):
     def index(self):
         a = []
         a.append("<HTML><TITLE>Blindshare</TITLE>")
-        a.append("<BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.1</H1>")
+        a.append("<BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.3</H1>")
         a.append("<p>")
         a.append("<TABLE border=1>")
        
@@ -20,7 +20,7 @@ class BlindShareAdmin(object):
             getAllItems = con.execute("SELECT * FROM hashtable ORDER BY url").fetchall()
 
         a.append("<H3>Add File</H3><P>")
-        a.append("<form action=\"putHash\" method=\"POST\">File: <input type=\"text\" name=\"file\" /><P><input value=\"add\" type=\"submit\" /></form>")
+        a.append("<form action=\"putHash\" method=\"POST\">File: <input type=\"file\" name=\"file\" /><P><input value=\"add\" type=\"submit\" /></form>")
 
         a.append("<HR>")
         a.append("<H3>Delete Hash</H3><P>")
@@ -40,29 +40,24 @@ class BlindShareAdmin(object):
         if (file == ""):
             return("<form action=\"index\">Field must no be empty<P><input value=\"back\" type=\"submit\" /></form>")
 
-#        hashSHA256 = array.array('B', (hashlib.sha256(file).hexdigest()) )
-
         hashSHA256 = hashlib.sha256(file).hexdigest()
         salt = hashlib.sha256(os.urandom(32)).hexdigest()
 
-#        salt = array.array('B', (os.urandom(64)) ) 
+        ### Debug start ###
+        print("hashSHA256: ", hashSHA256)
+        print("salt: ", salt)
+        ### Debug end  ###
 
-#        X = []
-#        for i in range(64):
-#            X.append(hex(hashSHA256[i] ^ salt[i])[2:] )
-#
-#        print(X)
-#        hashX = ''.join(X)
+        d1 = long(hashSHA256,16)
+        d2 = long(salt,16)
 
-#        hashX = hashSHA256 ^ salt
-
-        hashX = ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(hashSHA256, salt))
-        print(hashX)
+        hashX = hex(d1 ^ d2).rstrip("L").lstrip("0x")
+        print(file, hashX)
 
         with sqlite3.connect('blinds.db') as con:
             con.execute("INSERT INTO hashtable (hash, url) VALUES (?, ?)", [hashX, file])
 
-        return("<form action=\"index\">New entry submitted<P><input value=\"back\" type=\"submit\" /></form>")
+        return self.index()
 
     @cherrypy.expose
     def delHash(self, hash):
@@ -72,7 +67,7 @@ class BlindShareAdmin(object):
         with sqlite3.connect('blinds.db') as con:
             con.execute("DELETE FROM hashtable WHERE hash=?", [hash])
 
-        return("<form action=\"index\">Entry deleted<P><input value=\"back\" type=\"submit\" /></form>")
+        return self.index()
 
     @cherrypy.expose
     def default(self):
