@@ -1,3 +1,17 @@
+Version: 0.3 - 21.02.2020
+
+Added Expiration-Date. Leave the Field empty or (NULL) to make the link infinitely available.
+Added FileSelector (HTML 5 stuff)
+
+To do's:
+Fix code 
+Make the whole project "Docker ready"
+Add Client-Cert verification
+Testing
+Makeup stuff ...
+I'd like to rework the Fileselector ... maybe in Python directly ... if possible
+
+
 Version: 0.2 - 19.02.2020
 
 Removed the Hash-as-Filename feature. It's confusing people as they can't remember what  the actually have donloaded.
