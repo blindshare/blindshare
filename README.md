@@ -9,7 +9,7 @@ Blindshare consists of two CherryPy Python scriptst:
 - server.py - The actual web serving process frontend you'll talk to to obtain any files.
 
  
-Prerequisites:
+##Prerequisites:##
 
 Sqlite3
 Python  
@@ -20,21 +20,21 @@ docker (in case you want to containerize)
 
 (The Docker stuff is currently missing ... sorry ... stay tuned)
 
-Usage:
+##Usage:##
 
 Use the mk to create a fresh and empty database. Place db in the db subfolder. Or you'll need to modify your config files to match your db's path.  
 
 Make sure you've created some ssl cert's or use pre-existing ones by specifying their location in the config files. 
 
-Start the Blindshare-Web-Admin console:
-  python admin.py
+__Start the Blindshare-Web-Admin console:__
+```python admin.py ```
 
 The web console is now available under: https://<hostname>:9090
 Place all file you like to share under the "files" dirctory. Or specify a different location within your config files.  
-Use the Admin console to add files you like to share. The hash will be calculated automatically.
+Use the Admin console to add files you like to share. The hash will be calculated automatically.  
 
-Launch the Blindshare-Server:
-  python server.py
+__Launch the Blindshare-Server:__
+```python server.py```
 
 The Server is now available under https://<hostname>:8080  
-Either surf to the website and enter your hash, or use a direct link: https://<hostname>:8080/getHash?item=<hash value>
+Either surf to the website and enter your hash, or use a direct link: https://<hostname>:8080/getHash?item=<hash value>  
