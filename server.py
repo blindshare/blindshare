@@ -12,7 +12,13 @@ class BlindShare(object):
         a = []
         a.append("<HTML><TITLE>Blind Share</TITLE>")
         a.append("<BODY>")
-        a.append("<H1>Blind Share - ver 0.3</H1>")
+        a.append("<H1>Blind Share - ver 0.4</H1>")
+        a.append("<HR>")
+        headers = cherrypy.request.headers
+        print(headers)
+        ClientCertSha1Fingerprint = headers.get('X-Ssl-Cert')
+        a.append("Clients Cert sha1 Fingerprint: ")
+        a.append(ClientCertSha1Fingerprint)
         a.append("<HR>")
         a.append("<form action=\"getHash\" method=\"GET\">Please insert hash: <input type=\"text\" name=\"item\" /><input value=\"get\" type=\"submit\" /></form>")
         return a
@@ -26,15 +32,16 @@ class BlindShare(object):
                 try:
                     myDB = os.path.join(cherrypy.request.app.config['paths']['db'], 'blinds.db')
                     with sqlite3.connect(myDB) as con:
-                        file, = con.execute("SELECT url FROM hashtable where (date('now') <= date(expire_date) OR expire_date IS NULL OR expire_date IS \"\") AND hash=?", [item]).fetchone()
+                        file = con.execute("SELECT url FROM hashtable where ( date('now') <= date(expire_date) OR expire_date IS NULL OR expire_date IS \"\" ) AND hash=?", [item]).fetchone()
+                        print(file)
                         path = os.path.join(cherrypy.request.app.config['paths']['filesPath'], file)
                         return cherrypy.lib.static.serve_file(path, 'application/x-download', 'attachment', file)
                 except TypeError:
-                    return TypeError
-                    # return self.error(404)
+#                    return TypeError
+                    return self.error(404)
                 except sqlite3.OperationalError:
-                    return sqlite3.OperationalError
-                    # return self.error(601)
+#                    return sqlite3.OperationalError
+                    return self.error(601)
         else:
             return self.error(404)
 

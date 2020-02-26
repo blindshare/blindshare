@@ -11,5 +11,7 @@ CREATE TABLE "hashtable" (
 CREATE TABLE "identities" (
 	"uid"	INTEGER,
 	"user"	TEXT,
-	"certFingerprint"	TEXT UNIQUE
+	"certFingerprint"	TEXT UNIQUE,
+	"view"	INTEGER,
+	"upload"	INTEGER
 );

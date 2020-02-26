@@ -11,7 +11,7 @@ class BlindShareAdmin(object):
     def index(self):
         a = []
         a.append("<HTML><TITLE>Blindshare</TITLE>")
-        a.append("<BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.3</H1>")
+        a.append("<BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.4</H1>")
         a.append("<p>")
         a.append("<TABLE border=1>")
        
@@ -22,6 +22,12 @@ class BlindShareAdmin(object):
         a.append("<H3>Add File</H3><P>")
         a.append("<form action=\"putHash\" method=\"POST\">File: <input type=\"file\" name=\"file\" />Expiration date: <input type=\"text\" name=\"exp\" /><P><input value=\"add\" type=\"submit\" /></form>")
 
+        a.append("<HR>")
+        a.append("<H3>Add User</H3><P>")
+        a.append("<form action=\"addUser\" method=\"POST\">User: <input type=\"text\" name=\"user\" />Cert Hash: <input type=\"text\" name=\"certhash\" /><BR>")
+        a.append("Show Files: <input type=\"checkbox\" name=\"view\" value=\"1\" />Upload: <input type=\"checkbox\" name=\"upload\" value=\"1\" /><P>")
+        a.append("<input value=\"add\" type=\"submit\" /></form>")
+        
         a.append("<HR>")
         a.append("<H3>Delete Hash</H3><P>")
         a.append("<form action=\"delHash\" method=\"POST\">Hash: <input type=\"text\" name=\"hash\" /><P><input type=\"submit\" /></form>")
