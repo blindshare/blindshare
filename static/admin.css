@@ -1,0 +1,38 @@
+H1 {
+  text-align:       center;
+}
+
+H3 {
+  text-align:       top;
+  margin:           20px 0px 0px 0px;
+  
+}
+
+td {
+  overflow:         hidden;
+  vertical-align:   top;
+}
+
+#tr.line td{
+#  background-color: tomato;
+#  border:           1px solid black;
+#  border-collapse:  collapse;
+#}
+
+.spacer {
+  width: 300px;
+}
+
+input[type=submit] {
+  width:            80px;
+  height:           30px;
+}
+
+#t1 {
+#  border:           1px solid black;
+#  border-collapse: collapse;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 90%;
+}

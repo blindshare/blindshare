@@ -10,35 +10,42 @@ class BlindShareAdmin(object):
     @cherrypy.expose
     def index(self):
         a = []
-        a.append("<HTML><TITLE>Blindshare</TITLE>")
-        a.append("<BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.4</H1>")
-        a.append("<p>")
-        a.append("<TABLE border=1>")
-       
-        myDB = os.path.join(cherrypy.request.app.config['paths']['db'], 'blinds.db')        
+        myDB = os.path.join(cherrypy.request.app.config['paths']['db'], 'blinds.db')
         with sqlite3.connect(myDB) as con:
             getAllItems = con.execute("SELECT * FROM hashtable ORDER BY url").fetchall()
 
-        a.append("<H3>Add File</H3><P>")
-        a.append("<form action=\"putHash\" method=\"POST\">File: <input type=\"file\" name=\"file\" />Expiration date: <input type=\"text\" name=\"exp\" /><P><input value=\"add\" type=\"submit\" /></form>")
+        a.append("<!DOCTYPE html> \n <HTML>\n <HEAD>")
+        a.append("<link rel=\"stylesheet\" href=\"static/admin.css\">\n")
+        a.append("<TITLE>Blindshare</TITLE>\n")
+        a.append("</HEAD>\n <BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.5</H1>\n")
+        a.append("<p>\n")
+        a.append("<TABLE id=\"t1\"> \n")
+        a.append("<tr><td colspan=\"6\"><HR></td></tr>\n")
+        a.append("<tr><td><H3>Add User</H3></td><td></td><td></td><td></td><td><H3>Remove User</H3></td><td></td></tr>\n")
+        a.append("<tr class=\"line\"><td><form action=\"addUser\" method=\"POST\">User: <input type=\"text\" name=\"user\"></td><td>Cert Hash: <input type=\"text\" name=\"certhash\"></td><td><input value=\"add\" type=\"submit\"></form></td><td class=\"spacer\"></td>\n")
+        a.append("<td><form action=\"delUser\" method=\"POST\">User ID: <input type=\"text\" name=\"userID\"></td><td><input value=\"del\" type=\"submit\"></form></td></tr>\n")
+        a.append("<tr><td colspan=\"6\"><HR></td></tr>\n")
+        a.append("<tr><td><H3>Update visibility</H3></td><td></td><td></td><td></td><td><H3>Remove File</H3></td><td></td></tr>\n")
+        a.append("<tr class=\"line\"><td>Show Files: <input type=\"checkbox\" name=\"view\" value=\"1\">Upload: <input type=\"checkbox\" name=\"upload\" value=\"1\"></td><td></td><td><input value=\"update\" type=\"submit\"></form></td><td></td>\n")
+        a.append("<td><form action=\"delFile\" method=\"POST\">File ID: <input type=\"text\" name=\"fileID\"></td><td><input value=\"del\" type=\"submit\"></form></td></tr>\n")
+        a.append("<tr><td colspan=\"6\"><HR></tr>\n")
+        a.append("<tr><td><H3>Edit expiration date</H3></td><td></td><td></td><td></td><td></td><td></td></tr>\n")
+        a.append("<tr calss=\"line\"><td><form action=\"expire\" method=\"POST\">Expiration date: <input type=\"text\" name=\"exp\"></td><td></td><td><input value=\"set\" type=\"submit\"></form></td><td></td><td></td><td></td></tr>\n")
+        a.append("<tr><td colspan=\"6\"><HR></td></tr>\n")
+        a.append("<tr><td><H3>Update Hash</H3></td><td></td><td></td><td></td><td><H3>Upload File</H3></td><td></td></tr>\n")
+        a.append("<tr id=\"line\"><td><form action=\"upHash\" method=\"POST\">File ID: <input type=\"text\" name=\"fileID\"></td><td>Hash: <input type=\"text\" name=\"hash\"></td><td><input value=\"update\" type=\"submit\"></form></td><td></td>\n")
+        a.append("<td><form action=\"upFile\" method=\"POST\">Upload File: <input type=\"text\" name=\"upFile\"></td><td><input value=\"upload\" type=\"submit\"></form></td></tr>\n")
+        a.append("<tr><td colspan=\"6\"><HR></td></tr>\n")
+        a.append("<tr><td><H3>Files:</H3><td></td><td></td><td></td><td><H3>Users:</H3></td><td></td></tr>\n")
+        a.append("</TABLE>\n")
 
-        a.append("<HR>")
-        a.append("<H3>Add User</H3><P>")
-        a.append("<form action=\"addUser\" method=\"POST\">User: <input type=\"text\" name=\"user\" />Cert Hash: <input type=\"text\" name=\"certhash\" /><BR>")
-        a.append("Show Files: <input type=\"checkbox\" name=\"view\" value=\"1\" />Upload: <input type=\"checkbox\" name=\"upload\" value=\"1\" /><P>")
-        a.append("<input value=\"add\" type=\"submit\" /></form>")
-        
-        a.append("<HR>")
-        a.append("<H3>Delete Hash</H3><P>")
-        a.append("<form action=\"delHash\" method=\"POST\">Hash: <input type=\"text\" name=\"hash\" /><P><input type=\"submit\" /></form>")
-
-        a.append("<HR>")
+        a.append("<TABLE id=\"t2\"> \n") 
         for line in getAllItems:
-            a.append("<tr><td>" + str(line[0]) + "</td><td>" + str(line[1]) + "</td><td>" + str(line[2]) + "</td><td>" + str(line[3]) + "</td></tr>")
+            a.append("<tr><td>" + str(line[0]) + "</td><td>" + str(line[1]) + "</td><td>" + str(line[2]) + "</td><td>" + str(line[3]) + "</td></tr>\n")
 
-        a.append("</TABLE>")
+        a.append("</TABLE>\n")
 
-        a.append("</BODY></HTML>") 
+        a.append("</BODY>\n</HTML>")
         return a
 
     @cherrypy.expose
