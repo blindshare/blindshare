@@ -9,18 +9,20 @@ H3 {
 }
 
 td {
-  overflow:         hidden;
-  vertical-align:   top;
+  vertical-align:   center;
+  height:           15px;
 }
 
-#tr.line td{
-#  background-color: tomato;
-#  border:           1px solid black;
-#  border-collapse:  collapse;
-#}
+.c1 {
+  width:            10px;
+}
+
+.c2 {
+  width:            150px;
+}
 
 .spacer {
-  width: 300px;
+  width:            150px;
 }
 
 input[type=submit] {
@@ -29,10 +31,11 @@ input[type=submit] {
 }
 
 #t1 {
-#  border:           1px solid black;
-#  border-collapse: collapse;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 90%;
+  display:          float;
+  margin-left:      auto;
+  margin-right:     auto;
+  width:            90%;
 }
+
+.ids {
+  width:            40px;
