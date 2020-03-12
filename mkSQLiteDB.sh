@@ -1,17 +1,21 @@
 sqlite3 blinds.db
 
-CREATE TABLE "hashtable" (
-	"id"	INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-	"hash"	TEXT UNIQUE,
-	"url"	TEXT,
-        "expire_date" INTEGER,
-	"uid"	INTEGER
+CREATE TABLE "Access" (
+	"fileID"	  INTEGER NOT NULL PRIMARY KEY,
+	"userID"	  INTEGER NOT NULL,
+	"expire_date"	  TEXT
 );
 
-CREATE TABLE "identities" (
-	"uid"	INTEGER,
-	"user"	TEXT,
-	"certFingerprint"	TEXT UNIQUE,
-	"view"	INTEGER,
-	"upload"	INTEGER
+CREATE TABLE "Files" (
+	"fileID"	  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+	"hash"	          INTEGER NOT NULL UNIQUE,
+	"url"	          TEXT NOT NULL
+);
+
+CREATE TABLE "Identities" (
+	"userID"	  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+	"name"	          TEXT,
+	"certFingerprint" TEXT UNIQUE,
+	"view"	          INTEGER,
+	"upload"	  INTEGER
 );
