@@ -1,7 +1,7 @@
 sqlite3 blinds.db
 
 CREATE TABLE "Access" (
-	"fileID"	  INTEGER NOT NULL PRIMARY KEY,
+	"fileID"	  INTEGER NOT NULL,
 	"userID"	  INTEGER NOT NULL,
 	"expire_date"	  TEXT
 );
