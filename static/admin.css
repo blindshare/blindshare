@@ -37,13 +37,24 @@ input[type=submit] {
   width:            90%;
 }
 
-#t2 {
-  display:          float;
-  margin-left:      auto;
-  margin-right:     auto;
-  width:            90%;
+.ids {
+  width:            40px;
+}
+
+.tc2 {
+  width:            80px;
+  text-align:       right;
+}
+
+.tc3 {
+  width:            650px;
+  text-align:       center;
+}
+
+.tc4 {
+  width:            250px;
+  text-align:       right;
 }
 
 
-.ids {
-  width:            40px;
+

@@ -47,26 +47,29 @@ class BlindShareAdmin(object):
             getAccessItems = con.execute("SELECT Access.userID, Identities.name, Access.fileID, Files.url, Access.expire_date from Access INNER JOIN Identities on Access.userID = Identities.userID INNER JOIN Files on Access.fileID = Files.fileID").fetchall()
 
         a.append("<DIV>")
+        a.append("<H3>Files:</H3>\n")
         a.append("<TABLE id=\"fil\" border=1> \n") 
-        a.append("<tr><td class=\"c1\"><H3>Files:</H3></td><td colspan=\"2\"></td></tr>\n")
+        a.append("<tr><TH>File ID</TH><TH>Hash</TH><TH>Filename</TH></tr>\n")
         for line in getFileItems:
-            a.append("<tr><td>" + str(line[0]) + "</td><td>" + str(line[1]) + "</td><td>" + str(line[2]) + "</td></tr>\n")
+            a.append("<tr><td class=\"tc2\">" + str(line[0]) + "</td><td class=\"tc3\">" + str(line[1]) + "</td><td class=\"tc4\">" + str(line[2]) + "</td></tr>\n")
 
         a.append("</TABLE>\n")
         a.append("<P>\n")
 
+        a.append("<H3>Users:</H3>\n")
         a.append("<TABLE id=\"ident\" border=1> \n")    
-        a.append("<tr><td class=\"c1\"><H3>Users:</H3></td><td colspan=\"5\"></td></tr>\n")
+        a.append("<tr><TH>User ID</TH><TH>Username</TH><TH>Cert Fingerprint</TH><TH>View</TH><TH>Upload</TH></tr>\n")
         for line in getUserItems:
-            a.append("<tr><td>" + str(line[0]) + "</td><td>" + str(line[1]) + "</td><td>" + str(line[2]) + "</td><td>" + str(bool(line[3])) + "</td><td>" + str(bool(line[4])) + "</td></tr>\n")
+            a.append("<tr><td class=\"tc2\">" + str(line[0]) + "</td><td class=\"tc4\">" + str(line[1]) + "</td><td class=\"tc3\">" + str(line[2]) + "</td><td class=\"tc2\">" + str(bool(line[3])) + "</td><td class=\"tc2\">" + str(bool(line[4])) + "</td></tr>\n")
 
         a.append("</TABLE>\n")
         a.append("<P>\n")
 
-        a.append("<TABLE id=\"acc\" border=1> \n")    
-        a.append("<tr><td class=\"c1\"><H3>Access:</H3></td><td colspan=\"5\"></td></tr>\n")
+        a.append("<H3>Access:</H3>\n")
+        a.append("<TABLE id=\"acc\" border=1> \n")   
+        a.append("<tr><TH>User ID</TH><TH>Username</TH><TH>File ID</TH><TH>Filename</TH><TH>Expire Date</TH></tr>\n") 
         for line in getAccessItems:
-            a.append("<tr><td>" + str(line[0]) + "</td><td>" + str(line[1]) + "</td><td>" + str(line[2]) + "</td><td>" + str(line[3]) + "</td><td>" + str(line[4]) + "</td></tr>\n")
+            a.append("<tr><td class=\"tc2\">" + str(line[0]) + "</td><td class=\"tc4\">" + str(line[1]) + "</td><td class=\"tc2\">" + str(line[2]) + "</td><td class=\"tc4\">" + str(line[3]) + "</td><td class=\"tc4\">" + str(line[4]) + "</td></tr>\n")
 
         a.append("</TABLE>\n")
         a.append("<P>\n")
@@ -76,13 +79,13 @@ class BlindShareAdmin(object):
         return a
 
     @cherrypy.expose
-    def putHash(self, hfile):
-        nfile=hfile.encode('utf-8')
-        print(nfile)
-        hashSHA256 = hashlib.sha256(nfile).hexdigest()
+    def putHash(self, u_filename):
+        ut_filename=u_filename.encode('utf-8')
+        hashSHA256 = hashlib.sha256(ut_filename).hexdigest()
         salt = hashlib.sha256(os.urandom(32)).hexdigest()
 
         ### Debug start ###
+        print("uploaded File: " + u_filename)
         print("hashSHA256: ", hashSHA256)
         print("salt: ", salt)
         ### Debug end  ###
@@ -93,7 +96,7 @@ class BlindShareAdmin(object):
         hashX = hex(d1 ^ d2).rstrip("L").lstrip("0x")
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            con.execute("INSERT INTO Files (hash, url) VALUES (?, ?)", [hashX, nfile])
+            con.execute("INSERT INTO Files (hash, url) VALUES (?, ?)", [hashX, u_filename])
 
         return self.index()
 
@@ -162,6 +165,15 @@ class BlindShareAdmin(object):
                 con.execute("DELETE FROM Access WHERE fileID=?", [fileID])
         except Exception as e:
            return e
+        try:
+            with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+                del_file=con.execute("SELECT url FROM Files WHERE fileID=?", [fileID])
+                upload_path = cherrypy.request.app.config['cfg']['uploadPath']
+                os.remove(os.path.join(upload_path, 'del_file'))
+
+        except Exception as e:
+           return e
+
 
         return self.index()
 
@@ -189,9 +201,10 @@ class BlindShareAdmin(object):
 
         print(upFile)
         ### Upload File to Server ############################################################################################
+        u_filename=upFile.filename
         upload_path = cherrypy.request.app.config['cfg']['uploadPath']
-        upload_file = os.path.normpath(os.path.join(upload_path, 'upFile'))
-        print("uploading file: " + upFile.filename)
+        upload_file = os.path.normpath(os.path.join(upload_path, u_filename))
+#        print("uploading file: " + upFile.filename)
 
         size = 0
         with open(upload_file, 'wb') as out:
@@ -202,8 +215,7 @@ class BlindShareAdmin(object):
                 out.write(data)
                 size += len(data)
 
-        nfile=upFile.filename   ### <-- Type conversion fails !!!
-        return self.putHash(nfile)
+        return self.putHash(u_filename)
 
     @cherrypy.expose
     def grantAccess(self, userID, fileID):
