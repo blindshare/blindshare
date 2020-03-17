@@ -13,7 +13,7 @@ class BlindShareAdmin(object):
         a.append("<!DOCTYPE html> \n <HTML>\n <HEAD>")
         a.append("<link rel=\"stylesheet\" href=\"static/admin.css\">\n")
         a.append("<TITLE>Blindshare</TITLE>\n")
-        a.append("</HEAD>\n <BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.6</H1>\n")
+        a.append("</HEAD>\n <BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.7</H1>\n")
         a.append("<p>\n")
 #        a.append("<TABLE id=\"t1\" border=\"1\" > \n")
         a.append("<TABLE id=\"t1\"> \n")
@@ -22,7 +22,7 @@ class BlindShareAdmin(object):
         a.append("<tr><td class=\"c2\"><form action=\"addUser\" method=\"POST\">Username:</td><td class=\"c1\"></td><td><input type=\"text\" name=\"user\"></td><td>Cert Hash:</td><td><input type=\"text\" name=\"certhash\"></td><td></td><td><input value=\"add\" type=\"submit\"></form></td><td class=\"spacer\"></td>\n")
         a.append("<td class=\"c2\"><form action=\"delUser\" method=\"POST\">User ID:</td><td></td><td class=\"c1\"></td><td><input class=\"ids\" type=\"text\" name=\"userID\"></td><td></td><td><input value=\"del\" type=\"submit\"></form></td></tr>\n")
         a.append("<tr><td colspan=\"14\"><HR></td></tr>\n")
-        a.append("<tr><td colspan=\"7\"><H3>Update visibility</H3></td><td class=\"spacer\"></td><td colspan=\"6\"><H3>Remove File</H3></td></tr>\n")
+        a.append("<tr><td colspan=\"7\"><H3>Update visibility</H3></td><td class=\"spacer\"></td><td colspan=\"6\"><H3>Delete File</H3></td></tr>\n")
         a.append("<tr><td class=\"c2\"><form action=\"upView\" method=\"POST\">Show Files: <input type=\"checkbox\" name=\"view\" value=\"1\"></td><td class=\"c1\"></td><td>Upload:<input type=\"checkbox\" name=\"upload\" value=\"1\"></td><td>User ID:</td><td><input class=\"ids\" type=\"text\" name=\"userID\"></td><td></td><td><input value=\"update\" type=\"submit\"></form></td><td class=\"spacer\"></td>\n")
         a.append("<td class=\"c2\"><form action=\"delFile\" method=\"POST\">File ID:</td><td></td><td class=\"c1\"></td><td><input class=\"ids\" type=\"text\" name=\"fileID\"></td><td></td><td><input value=\"del\" type=\"submit\"></form></td></tr>\n")
         a.append("<tr><td colspan=\"14\"><HR></tr>\n")
@@ -155,9 +155,31 @@ class BlindShareAdmin(object):
         return self.index()
 
     @cherrypy.expose
+    def deleteFile(self, fileID):
+        if (fileID == "" ):
+            return("<form action=\"index\">Field FileID must no be empty<P><input value=\"back\" type=\"submit\" /></form>")
+
+        with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+            del_file,=con.execute("SELECT url FROM Files WHERE fileID=?", [fileID]).fetchone()
+
+        print(type(del_file))
+
+        b = []
+        b.append("<!DOCTYPE html> \n")
+        b.append("<P>\n")
+        b.append("<script type=\"text/javascript\">\n")
+        b.append("var c=confirm(\"Click OK to continue?\");\n")
+        b.append("return c;\n")
+#        b.append("<form action=\"delFile\" method=\"post\" name=\"fileID\" onsubmit=\"return confirm('Delete: " + str(del_file) + "');\"></form>\n")
+        b.append("</script>\n")
+
+
+        return b
+
+    @cherrypy.expose
     def delFile(self, fileID):
         if (fileID == "" ):
-            return("<form action=\"index\">Field FileID must no be blank<P><input value=\"back\" type=\"submit\" /></form>")
+            return("<form action=\"index\">Field FileID must no be empty<P><input value=\"back\" type=\"submit\" /></form>")
 
         try:
             with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
@@ -167,9 +189,9 @@ class BlindShareAdmin(object):
            return e
         try:
             with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-                del_file=con.execute("SELECT url FROM Files WHERE fileID=?", [fileID])
+                del_file,=con.execute("SELECT url FROM Files WHERE fileID=?", [fileID]).fetchone()
                 upload_path = cherrypy.request.app.config['cfg']['uploadPath']
-                os.remove(os.path.join(upload_path, 'del_file'))
+                os.remove(os.path.join(upload_path, del_file))
 
         except Exception as e:
            return e
@@ -180,7 +202,7 @@ class BlindShareAdmin(object):
     @cherrypy.expose
     def upHash(self, fileID, hash):
         if (fileID == "" or hash==""):
-            return("<form action=\"index\">Fields FileID nor hash must no be blank<P><input value=\"back\" type=\"submit\" /></form>")
+            return("<form action=\"index\">Fields FileID nor hash must no be empty<P><input value=\"back\" type=\"submit\" /></form>")
 
         try:
             with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
@@ -193,18 +215,15 @@ class BlindShareAdmin(object):
     @cherrypy.expose
     def uplFile(self, upFile):
         if (upFile == ""):
-            return("<form action=\"index\">Field must no be blank<P><input value=\"back\" type=\"submit\"></form>")
+            return("<form action=\"index\">Field must no be empty<P><input value=\"back\" type=\"submit\"></form>")
 
         ### no, you will not inject some strange paths here !
         if ( "/" in upFile.filename or "\\" in upFile.filename ):
             return("<form action=\"index\">Invalid Filename<P><input value=\"back\" type=\"submit\"></form>")
 
-        print(upFile)
-        ### Upload File to Server ############################################################################################
         u_filename=upFile.filename
         upload_path = cherrypy.request.app.config['cfg']['uploadPath']
         upload_file = os.path.normpath(os.path.join(upload_path, u_filename))
-#        print("uploading file: " + upFile.filename)
 
         size = 0
         with open(upload_file, 'wb') as out:
