@@ -9,7 +9,8 @@ CREATE TABLE "Access" (
 CREATE TABLE "Files" (
 	"fileID"	  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
 	"hash"	          INTEGER NOT NULL UNIQUE,
-	"url"	          TEXT NOT NULL
+	"fileObj"	  TEXT NOT NULL,
+        "origin"	  INTEGER NOT NULL
 );
 
 CREATE TABLE "Identities" (
