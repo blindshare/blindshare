@@ -9,23 +9,41 @@ class BlindShare(object):
 
     @cherrypy.expose
     def index(self):
+        headers = cherrypy.request.headers
+        print(headers)
+        ClientCertSha1Fingerprint = str(headers.get('X-Ssl-Cert'))
+        ClientCertSha1Fingerprint = "123456"
+        try:
+            with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+                helloUser, = con.execute("SELECT name FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
+                downloadItems = con.execute("SELECT Files.hash, Files.fileObj, Access.expire_date, Identities.name as origin FROM Files \
+                                             INNER JOIN Identities on Identities.userID = Access.userID \
+                                             INNER JOIN Access on Access.fileID = Files.fileID").fetchall()
+        except:
+            pass
+
         a = []
         a.append("<!DOCTYPE html> \n")
         a.append("<HTML><TITLE>Blind Share</TITLE>\n")
         a.append("<BODY>\n")
         a.append("<H1>Blind Share - ver 0.5</H1>\n")
         a.append("<HR>\n")
-        headers = cherrypy.request.headers
-        print(headers)
-        ClientCertSha1Fingerprint = headers.get('X-Ssl-Cert')
-        a.append("Clients Cert sha1 Fingerprint: \n")
-        a.append(ClientCertSha1Fingerprint)
+        a.append("Clients Cert sha1 Fingerprint: " + ClientCertSha1Fingerprint + "\n")
         a.append("<HR>\n")
-        a.append("<form action=\"getHash\" method=\"GET\">Please insert hash: <input type=\"text\" name=\"item\" /><input value=\"get\" type=\"submit\" /></form>\n")
-        a.append("</BODY></HTML>\n")
+        a.append("<H2>Hallo " + helloUser + "</H2><BR>\n")
+        a.append("<form action=\"getHash\" method=\"GET\">Please insert hash: <input type=\"text\" name=\"item\"><input value=\"download\" type=\"submit\"></form>\n")
+        a.append("<P>\n")
+        a.append("<P>\n")
+        a.append("<TABLE border=1>")
+        a.append("<TR><TH>File Hash</TH><TH>File</TH><TH>Expires on</TH><TH>Origin</TH></TR>")
+        try:
+            for dwnlItems in downloadItems:
+                a.append("<TR><TD>" + str(dwnlItems[0]) + "</TD><TD>" + str(dwnlItems[1]) + "</TD><TD>" + str(dwnlItems[2]) + "</TD><TD>" + str(dwnlItems[3]) + "</TD><TD><form action=\"getHash\" method=\"POST\"><select name=\"usrOps\"><option value=\"Download\">Download</option><option value=\"Delete\">Delete</option></select><input value=\"Go\" type=\"submit\"></form></TD></TR>\n")     
+        except:
+            pass
 
-        with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            fItems = con.execute("SELECT eID=? AND userID=?", [fileID, userID])
+        a.append("</TABLE>\n")
+        a.append("</BODY></HTML>\n")
 
         return a
 
@@ -49,32 +67,39 @@ class BlindShare(object):
         return a
 
 
-    @cherrypy.expose
-    def getID(self, ClientCertSha1Fingerprint=""):
-
-
 
     @cherrypy.expose
-    def getHash(self, item=None):
-        if item:
-            if (len(item) > 64):
-                return self.error(404) 
-            else:
-                try:
-                    myDB = os.path.join(cherrypy.request.app.config['paths']['db'], 'blinds.db')
-                    with sqlite3.connect(myDB) as con:
-                        file = con.execute("SELECT url FROM hashtable where ( date('now') <= date(expire_date) OR expire_date IS NULL OR expire_date IS \"\" ) AND hash=?", [item]).fetchone()
-                        print(file)
-                        path = os.path.join(cherrypy.request.app.config['paths']['filesPath'], file)
-                        return cherrypy.lib.static.serve_file(path, 'application/x-download', 'attachment', file)
-                except TypeError:
-#                    return TypeError
-                    return self.error(404)
-                except sqlite3.OperationalError:
-#                    return sqlite3.OperationalError
-                    return self.error(601)
-        else:
-            return self.error(404)
+    def getFileObj(self, hashItem=None):
+        ### use this for direct access ###
+
+        if (hashItem == "" or hashItem == None):
+           return self.error(404)
+
+#        if (len(hashItem) > 64 or len(hashItem <= 63)):
+#           return self.error(404) 
+
+        try:
+            headers = cherrypy.request.headers
+            print(headers)
+            ClientCertSha1Fingerprint = str(headers.get('X-Ssl-Cert'))
+            ClientCertSha1Fingerprint = "123456"
+        except:
+            pass
+
+        with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+            fileObj, = con.execute("SELECT Files.fileObj FROM Files \
+                                    INNER JOIN Identities on Identities.userID = Access.userID \
+                                    INNER JOIN Access on Access.fileID = Files.fileID \
+                                    WHERE Identities.certFingerprint = ? \
+                                    AND Files.hash = ? \
+                                    AND (date('now') <= date(Access.expire_date) OR Access.expire_date IS NULL OR expire_date IS \"\"", [ClientCertSha1Fingerprint, hashItem])
+
+
+
+            d_path = cherrypy.request.app.config['cfg']['uploadPath']
+
+            path = os.path.join(cherrypy.request.app.config['cfg']['filesPath'], file)
+            return cherrypy.lib.static.serve_file(path, 'application/x-download', 'attachment', file)
 
     @cherrypy.expose
     def error(self, err):

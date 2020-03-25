@@ -42,7 +42,6 @@ class BlindShareAdmin(object):
         a.append("<P>\n")
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-#            getFileItems = con.execute("SELECT * FROM Files ORDER BY origin").fetchall()
             getFileItems = con.execute("Select Files.fileID, Files.hash, Files.fileObj, Identities.name as Origin from Files INNER JOIN Identities on Files.origin = Identities.userID").fetchall()
             getUserItems = con.execute("SELECT * FROM Identities ORDER BY userID").fetchall()
             getAccessItems = con.execute("SELECT Access.userID, Identities.name, Access.fileID, Files.fileObj, Access.expire_date from Access INNER JOIN Identities on Access.userID = Identities.userID INNER JOIN Files on Access.fileID = Files.fileID").fetchall()

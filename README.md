@@ -34,11 +34,11 @@ Place all file you like to share under the "files" dirctory. Or specify a differ
 Use the Admin console to add files you like to share. The hash will be calculated automatically.  
 
 __Launch the Blindshare-Server:__
-```python server.py```
+```python server.py ```
 
-The Server is now available under https://<hostname>:8080  
-Either surf to the website and enter your hash, or use a direct link: https://<hostname>:8080/getHash?item=<hash value>  
+The Server is now available under https://< Hostname >:8080  
+Either surf to the website and enter your hash, or use a direct link: https://< Hostname >:8080/getHash?item=<hash value>  
 
-##Create self-signed Certificates##
+##Create self-signed Certificates:##
 ```openssl req -new -newkey rsa:4096 -sha256 -nodes -x509 -keyout server.key -out server.pem```
 
