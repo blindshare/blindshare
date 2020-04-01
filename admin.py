@@ -90,7 +90,7 @@ class BlindShareAdmin(object):
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
             userid, = con.execute("SELECT userID from Identities WHERE name=?", [user]).fetchone()
-            u_path = cherrypy.request.app.config['cfg']['uploadPath']
+            u_path = cherrypy.request.app.config['cfg']['filesPath']
             mk_u_path = os.path.normpath(os.path.join(u_path, str(userid)))
             access_rights = 0o755
             os.mkdir(mk_u_path, access_rights)
@@ -167,7 +167,7 @@ class BlindShareAdmin(object):
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
             del_file, = con.execute("SELECT fileObj FROM Files WHERE fileID=?", [fileID]).fetchone()
             rmOrigin, = con.execute("SELECT origin FROM Files WHERE fileID=?", [fileID]).fetchone()
-            u_path = cherrypy.request.app.config['cfg']['uploadPath']
+            u_path = cherrypy.request.app.config['cfg']['filesPath']
             rmPath = os.path.normpath(os.path.join(u_path, str(rmOrigin)))
             print("del file: " + rmPath +  del_file)
             os.remove(os.path.join(rmPath, del_file))
@@ -194,7 +194,7 @@ class BlindShareAdmin(object):
             return("<form action=\"index\">Field must no be empty<P><input value=\"back\" type=\"submit\"></form>")
 
         u_filename=upFile.filename
-        u_path = cherrypy.request.app.config['cfg']['uploadPath']
+        u_path = cherrypy.request.app.config['cfg']['filesPath']
         upload_path = os.path.normpath(os.path.join(u_path, userID))
 
         if (os.path.exists(upload_path) == False ):
