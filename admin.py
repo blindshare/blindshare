@@ -12,7 +12,7 @@ class BlindShareAdmin(object):
         a = []
         a.append("<!DOCTYPE html> \n <HTML>\n <HEAD>")
         a.append("<link rel=\"stylesheet\" href=\"static/admin.css\">\n")
-        a.append("<TITLE>Blindshare</TITLE>\n")
+        a.append("<TITLE>Blindshare Admin Console</TITLE>\n")
         a.append("</HEAD>\n <BODY><H1> Welcom to BlindShare Web-Admin-Console - ver. 0.7</H1>\n")
         a.append("<p>\n")
 #        a.append("<TABLE id=\"t1\" border=\"1\" > \n")
@@ -42,9 +42,12 @@ class BlindShareAdmin(object):
         a.append("<P>\n")
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            getFileItems = con.execute("Select Files.fileID, Files.hash, Files.fileObj, Identities.name as Origin from Files INNER JOIN Identities on Files.origin = Identities.userID").fetchall()
+            getFileItems = con.execute("Select Files.fileID, Files.hash, Files.fileObj, Identities.name as Origin from Files \
+                                        INNER JOIN Identities on Files.origin = Identities.userID").fetchall()
             getUserItems = con.execute("SELECT * FROM Identities ORDER BY userID").fetchall()
-            getAccessItems = con.execute("SELECT Access.userID, Identities.name, Access.fileID, Files.fileObj, Access.expire_date from Access INNER JOIN Identities on Access.userID = Identities.userID INNER JOIN Files on Access.fileID = Files.fileID").fetchall()
+            getAccessItems = con.execute("SELECT Access.userID, Identities.name, Access.fileID, Files.fileObj, Access.expire_date from Access \
+                                          INNER JOIN Identities on Access.userID = Identities.userID \
+                                          INNER JOIN Files on Access.fileID = Files.fileID").fetchall()
 
         a.append("<DIV>")
         a.append("<H3>Files:</H3>\n")

@@ -18,11 +18,10 @@ class BlindShare(object):
         try:
             with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
                 helloUser, = con.execute("SELECT name FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
-                userID, = con.execute("SELECT userID FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
-                cherrypy.session['userID'] = userID
-                downloadItems = con.execute("SELECT Files.hash, Files.fileObj, Access.expire_date, Identities.name as origin FROM Files \
+                downloadItems = con.execute("SELECT Files.hash, Files.fileObj, Access.expire_date, Files.origin FROM Files \
                                              INNER JOIN Identities on Identities.userID = Access.userID \
-                                             INNER JOIN Access on Access.fileID = Files.fileID").fetchall()
+                                             INNER JOIN Access on Access.fileID = Files.fileID \
+                                             WHERE Identities.certFingerprint = ?",[ClientCertSha1Fingerprint]).fetchall()
         except:
             pass
 
@@ -38,8 +37,8 @@ class BlindShare(object):
         a.append("<form action=\"getFileObj\" method=\"GET\">Please insert hash: <input type=\"text\" name=\"hashItem\"><input value=\"download\" type=\"submit\"></form>\n")
         a.append("<P>\n")
         a.append("<P>\n")
-        a.append("<TABLE border=1>")
-        a.append("<TR><TH>File Hash</TH><TH>File</TH><TH>Expires on</TH><TH>Origin</TH></TR>")
+        a.append("<TABLE border=1>\n")
+        a.append("<TR><TH>File Hash</TH><TH>File</TH><TH>Expires on</TH><TH>Origin</TH></TR>\n")
         try:
             for dwnlItems in downloadItems:
                 a.append("<TR><TD>" + str(dwnlItems[0]) + "</TD><TD>" + str(dwnlItems[1]) + "</TD><TD>" + str(dwnlItems[2]) + "</TD><TD>" + str(dwnlItems[3]) + "</TD><TD><form action=\"upOrDel\" method=\"POST\"><select name=\"usrOps\"><option value=\"download\">Download</option><option value=\"delete\">Delete</option></select><input name=\"hashItem\" value=\"" + str(dwnlItems[0]) + "\" type=\"hidden\"><input value=\"Go\" type=\"submit\"></form></TD></TR>\n")     
@@ -50,6 +49,7 @@ class BlindShare(object):
         a.append("</BODY></HTML>\n")
 
         return a
+
 
     @cherrypy.expose
     def index2(self):
@@ -86,29 +86,47 @@ class BlindShare(object):
         if (hashItem == "" or hashItem == None):
             return self.error(404)
 
-        with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            isOriginator, = con.execute("SELECT CASE WHEN EXISTS ( SELECT origin FROM files where hash =? ) \
-                                        THEN CAST(1 AS BIT) \
-                                        ELSE CAST(0 AS BIT) \
-                                        END", [hashItem]).fetchone()
-
-        userID = str(cherrypy.session.get('userID'))
+        ClientCertSha1Fingerprint = str(cherrypy.session.get('ClientCertSha1Fingerprint'))
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-#            con.execute("DELETE FROM Access WHERE fileID=? AND userID=?", [fileID, userID])
+            origin, = con.execute("SELECT origin from Files WHERE hash = ?", [hashItem]).fetchone()
 
+            isOriginator, = con.execute("SELECT CASE WHEN EXISTS ( SELECT origin FROM files \
+                                         INNER JOIN Access on Access.fileID = Files.fileID \
+                                         INNER JOIN Identities on Identities.userID = Access.userID \
+                                         WHERE Files.hash = ? AND Identities.certFingerprint = ? ) \
+                                           THEN CAST(1 AS BIT) \
+                                           ELSE CAST(0 AS BIT) \
+                                        END", [hashItem, ClientCertSha1Fingerprint]).fetchone()
 
+            del_file, = con.execute("SELECT fileObj from Files \
+                                     INNER JOIN Access on Access.fileID = Files.fileID \
+                                     INNER JOIN Identities on Identities.userID = Access.userID \
+                                     WHERE Files.hash = ? AND Identities.certFingerprint = ? ", [hashItem, ClientCertSha1Fingerprint]).fetchone()
 
+            print("origin: " + str(origin) + " - is Originator: " + str(isOriginator) + " - File to delete: " + del_file)
+        
+            con.execute("DELETE FROM access WHERE EXISTS \
+                         ( SELECT * FROM Access \
+                           INNER JOIN Files on Files.fileID = Access.fileID \
+                           INNER JOIN Identities on Identities.userID = Access.userID \
+                           WHERE Files.hash = ? AND Identities.certFingerprint = ? )", [hashItem, ClientCertSha1Fingerprint] \
+                       )
 
+            con.execute("DELETE FROM Files WHERE EXISTS \
+                         ( SELECT * FROM Files \
+                           INNER JOIN Access on Access.fileID = Files.fileID \
+                           INNER JOIN Identities on Identities.userID = Access.userID \
+                           WHERE Files.hash = ? AND Identities.certFingerprint = ? )", [hashItem, ClientCertSha1Fingerprint] \
+                       )
 
-
-        print(isOriginator)
         if (isOriginator == True):
-           return "you are the originator"
+               u_path = cherrypy.request.app.config['cfg']['filesPath']
+               rmPath = os.path.normpath(os.path.join(u_path, str(origin)))
+               print("del file: " + rmPath +  del_file)
+               os.remove(os.path.join(rmPath, del_file))
 
-        if (isOriginator == False):
-           return "you NOT are the originator"
-
+        return self.index()
 
 
     @cherrypy.expose
@@ -120,7 +138,7 @@ class BlindShare(object):
 #           return self.error(404) 
 
         ClientCertSha1Fingerprint = cherrypy.session.get('ClientCertSha1Fingerprint')
-        print("Client: " + str(ClientCertSha1Fingerprint) + " downloading: " + hashItem)
+        print("### Client: " + str(ClientCertSha1Fingerprint) + " downloading: " + hashItem)
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
             fileObj, = con.execute("SELECT Files.fileObj FROM Files \
@@ -128,14 +146,13 @@ class BlindShare(object):
                                     INNER JOIN Access on Access.fileID = Files.fileID \
                                     WHERE Identities.certFingerprint = ? \
                                     AND Files.hash = ? \
-                                    AND (date('now') <= date(Access.expire_date)) OR Access.expire_date IS NULL OR expire_date IS \"\"", [ClientCertSha1Fingerprint, hashItem]).fetchone()
+                                    AND (date('now') <= date(Access.expire_date) OR Access.expire_date IS NULL OR expire_date IS \"\")", [ClientCertSha1Fingerprint, hashItem]).fetchone()
 
+            origin, = con.execute("SELECT origin from Files WHERE hash = ?", [hashItem]).fetchone()
 
-            userID = str(cherrypy.session.get('userID'))
-            d_path = cherrypy.request.app.config['cfg']['filesPath']
-
-            uri = os.path.join(cherrypy.request.app.config['cfg']['filesPath'], userID, fileObj)
+            uri = os.path.join(cherrypy.request.app.config['cfg']['filesPath'], str(origin), fileObj)
             return cherrypy.lib.static.serve_file(uri, 'application/x-download', 'attachment', fileObj)
+
 
     @cherrypy.expose
     def error(self, err):
@@ -159,6 +176,7 @@ class BlindShare(object):
             erm.append("<u>Please contact your DBA and try again later</u>")
             erm.append("<HR>")
             return erm
+
 
     @cherrypy.expose
     def default(self):
