@@ -89,7 +89,7 @@ class BlindShareAdmin(object):
             return("<form action=\"index\">Fields User nor CertHash must no be empty<P><input value=\"back\" type=\"submit\" /></form>")
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            con.execute("INSERT INTO Identities (name, certFingerprint, view, upload) VALUES (?, ?, ?, ?)", [user, certhash, 0, 0])
+            con.execute("INSERT OR REPLACE INTO Identities (name, certFingerprint, view, upload) VALUES (?, ?, ?, ?)", [user, certhash, 0, 0])
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
             userid, = con.execute("SELECT userID from Identities WHERE name=?", [user]).fetchone()
@@ -254,7 +254,7 @@ class BlindShareAdmin(object):
            exp_date=""
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            con.execute("INSERT INTO Access (fileID, userID, expire_date) VALUES (?, ?, ?)", [fileID, userID, exp_date])
+            con.execute("INSERT OR REPLACE INTO Access (fileID, userID, expire_date) VALUES (?, ?, ?)", [fileID, userID, exp_date])
 
         return self.index()
 

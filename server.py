@@ -106,25 +106,20 @@ class BlindShare(object):
 
             print("origin: " + str(origin) + " - is Originator: " + str(isOriginator) + " - File to delete: " + del_file)
         
-            con.execute("DELETE FROM access WHERE EXISTS \
-                         ( SELECT * FROM Access \
+            con.execute("DELETE FROM access WHERE (Access.fileID, Access.userID) in \
+                         ( SELECT Access.fileID, Access.userID FROM Access \
                            INNER JOIN Files on Files.fileID = Access.fileID \
                            INNER JOIN Identities on Identities.userID = Access.userID \
                            WHERE Files.hash = ? AND Identities.certFingerprint = ? )", [hashItem, ClientCertSha1Fingerprint] \
                        )
 
-            con.execute("DELETE FROM Files WHERE EXISTS \
-                         ( SELECT * FROM Files \
-                           INNER JOIN Access on Access.fileID = Files.fileID \
-                           INNER JOIN Identities on Identities.userID = Access.userID \
-                           WHERE Files.hash = ? AND Identities.certFingerprint = ? )", [hashItem, ClientCertSha1Fingerprint] \
-                       )
-
         if (isOriginator == True):
-               u_path = cherrypy.request.app.config['cfg']['filesPath']
-               rmPath = os.path.normpath(os.path.join(u_path, str(origin)))
-               print("del file: " + rmPath +  del_file)
-               os.remove(os.path.join(rmPath, del_file))
+            with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+                con.execute("DELETE FROM Files WHERE hash = ?", [hashItem])
+                u_path = cherrypy.request.app.config['cfg']['filesPath']
+                rmPath = os.path.normpath(os.path.join(u_path, str(origin)))
+                print("del file: " + rmPath +  del_file)
+                os.remove(os.path.join(rmPath, del_file))
 
         return self.index()
 
