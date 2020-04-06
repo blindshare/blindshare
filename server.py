@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import cherrypy
+import hashlib
 import sqlite3
 import os
 import sys
@@ -22,30 +23,37 @@ class BlindShare(object):
                                              INNER JOIN Identities on Identities.userID = Access.userID \
                                              INNER JOIN Access on Access.fileID = Files.fileID \
                                              WHERE Identities.certFingerprint = ?",[ClientCertSha1Fingerprint]).fetchall()
+                isViewable, = con.execute("SELECT view FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
+                isUploadable, = con.execute("SELECT upload FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
         except:
             pass
 
         a = []
         a.append("<!DOCTYPE html> \n")
+        a.append("<link rel=\"stylesheet\" href=\"static/server.css\">\n")
         a.append("<HTML><TITLE>Blind Share</TITLE>\n")
         a.append("<BODY>\n")
         a.append("<H1>Blind Share - ver 0.5</H1>\n")
         a.append("<HR>\n")
         a.append("Clients Cert sha1 Fingerprint: " + ClientCertSha1Fingerprint + "\n")
         a.append("<HR>\n")
-        a.append("<H2>Hallo " + helloUser + "</H2><BR>\n")
+        a.append("<H2>Hallo " + helloUser + "</H2>\n")
+        a.append("<BR>\n")
+        if (isUploadable == 1):
+            a.append("<form action=\"uploadFile\" method=\"POST\" enctype=\"multipart/form-data\">Upload File: <input type=\"file\" name=\"upFile\"><input value=\"upload\" type=\"submit\"></form></td></tr>\n")
+            a.append("<BR>\n")
         a.append("<form action=\"getFileObj\" method=\"GET\">Please insert hash: <input type=\"text\" name=\"hashItem\"><input value=\"download\" type=\"submit\"></form>\n")
-        a.append("<P>\n")
-        a.append("<P>\n")
-        a.append("<TABLE border=1>\n")
-        a.append("<TR><TH>File Hash</TH><TH>File</TH><TH>Expires on</TH><TH>Origin</TH></TR>\n")
-        try:
-            for dwnlItems in downloadItems:
-                a.append("<TR><TD>" + str(dwnlItems[0]) + "</TD><TD>" + str(dwnlItems[1]) + "</TD><TD>" + str(dwnlItems[2]) + "</TD><TD>" + str(dwnlItems[3]) + "</TD><TD><form action=\"upOrDel\" method=\"POST\"><select name=\"usrOps\"><option value=\"download\">Download</option><option value=\"delete\">Delete</option></select><input name=\"hashItem\" value=\"" + str(dwnlItems[0]) + "\" type=\"hidden\"><input value=\"Go\" type=\"submit\"></form></TD></TR>\n")     
-        except:
-            pass
+        a.append("<BR>\n")
+        if (isViewable == 1):
+            a.append("<TABLE border=1>\n")
+            a.append("<TR><TH>File Hash</TH><TH>File</TH><TH>Expires on</TH><TH>Origin</TH></TR>\n")
+            try:
+                for dwnlItems in downloadItems:
+                    a.append("<TR><TD>" + str(dwnlItems[0]) + "</TD><TD>" + str(dwnlItems[1]) + "</TD><TD>" + str(dwnlItems[2]) + "</TD><TD>" + str(dwnlItems[3]) + "</TD><TD><form action=\"upOrDel\" method=\"POST\"><select name=\"usrOps\"><option value=\"download\">Download</option><option value=\"delete\">Delete</option></select><input name=\"hashItem\" value=\"" + str(dwnlItems[0]) + "\" type=\"hidden\"><input value=\"Go\" type=\"submit\"></form></TD></TR>\n")     
+            except:
+                pass
 
-        a.append("</TABLE>\n")
+            a.append("</TABLE>\n")
         a.append("</BODY></HTML>\n")
 
         return a
@@ -56,7 +64,8 @@ class BlindShare(object):
         cherrypy.session.load()
         a = []
         a.append("<!DOCTYPE html> \n")
-        a.append("<HTML><TITLE>Blind Share</TITLE>\n")
+        a.append("<link rel=\"stylesheet\" href=\"static/server.css\">\n")
+        a.append("<TITLE>Blind Share</TITLE>\n")
         a.append("<BODY>\n")
         a.append("<H1>Blind Share - ver 0.5</H1>\n")
         a.append("<HR>\n")
@@ -64,10 +73,14 @@ class BlindShare(object):
         print(headers)
         ClientCertSha1Fingerprint = headers.get('X-Ssl-Cert')
         a.append("Clients Cert sha1 Fingerprint: \n")
-        a.append(ClientCertSha1Fingerprint)
+        a.append(str(ClientCertSha1Fingerprint))
         a.append("<HR>\n")
-        a.append("This is a private Content Management Service site NOT a one-click hoster<P>\n")
+        a.append("<BR>\n")
+        a.append("<DIV>\n")
+        a.append("<B>This is a private Content Management Service site NOT a one-click hoster</B><BR>\n")
+        a.append("<BR>\n")
         a.append("If you see this text, access to this site has not been granted or any sharing of public content has been disabled.\n")
+        a.append("</DIV>\n")
         a.append("</BODY></HTML>\n")
         return a
 
@@ -92,9 +105,9 @@ class BlindShare(object):
             origin, = con.execute("SELECT origin from Files WHERE hash = ?", [hashItem]).fetchone()
 
             isOriginator, = con.execute("SELECT CASE WHEN EXISTS ( SELECT origin FROM files \
-                                         INNER JOIN Access on Access.fileID = Files.fileID \
-                                         INNER JOIN Identities on Identities.userID = Access.userID \
-                                         WHERE Files.hash = ? AND Identities.certFingerprint = ? ) \
+                                         INNER JOIN Identities on Identities.userID = Files.origin \
+                                         WHERE Files.hash = ? AND Identities.certFingerprint = ? \
+                                         AND Files.origin = Identities.userID) \
                                            THEN CAST(1 AS BIT) \
                                            ELSE CAST(0 AS BIT) \
                                         END", [hashItem, ClientCertSha1Fingerprint]).fetchone()
@@ -147,6 +160,63 @@ class BlindShare(object):
 
             uri = os.path.join(cherrypy.request.app.config['cfg']['filesPath'], str(origin), fileObj)
             return cherrypy.lib.static.serve_file(uri, 'application/x-download', 'attachment', fileObj)
+
+
+    @cherrypy.expose
+    def uploadFile(self, upFile):
+        if (upFile.filename == ""):
+            return ("<form action=\"index\">Field must no be empty<P><input value=\"back\" type=\"submit\"></form>")
+
+        ClientCertSha1Fingerprint = cherrypy.session.get('ClientCertSha1Fingerprint')
+        if (ClientCertSha1Fingerprint == ""):
+            return ("<form action=\"index\">User not authorized to upload any files<P><input value=\"back\" type=\"submit\"></form>")
+
+        with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+            userID, = con.execute("SELECT userID from Identities where Identities.certFingerprint = ?", [ClientCertSha1Fingerprint]).fetchone()
+
+        u_filename=upFile.filename
+        u_path = cherrypy.request.app.config['cfg']['filesPath']
+        upload_path = os.path.normpath(os.path.join(u_path, str(userID)) )
+
+        if (os.path.exists(upload_path) == False ):
+            return("<form action=\"index\">Upload Path does not exist<P><input value=\"back\" type=\"submit\"></form>")
+
+        ### no, you will not inject some strange paths here !
+        if ( "/" in u_filename or "\\" in u_filename ):
+            return("<form action=\"index\">Invalid Filename<P><input value=\"back\" type=\"submit\"></form>")
+
+        upload_file = os.path.normpath(os.path.join(upload_path, u_filename))
+
+        size = 0
+        with open(upload_file, 'wb') as out:
+            while True:
+                data = upFile.file.read(8192)
+                if not data:
+                    break
+                out.write(data)
+                size += len(data)
+
+        ut_filename=u_filename.encode('utf-8')
+        hashSHA256 = hashlib.sha256(ut_filename).hexdigest()
+        salt = hashlib.sha256(os.urandom(32)).hexdigest()
+
+        ### Debug start ###
+        print("uploaded File: " + u_filename)
+        print("hashSHA256: ", hashSHA256)
+        print("salt: ", salt)
+        ### Debug end  ###
+
+        d1 = int(hashSHA256,16)
+        d2 = int(salt,16)
+
+        hashX = hex(d1 ^ d2).rstrip("L").lstrip("0x")
+
+        with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
+            con.execute("INSERT INTO Files (hash, fileObj, origin) VALUES (?, ?, ?)", [hashX, u_filename, userID])
+            fileID, = con.execute("SELECT fileID from Files WHERE hash=?", [hashX]).fetchone()
+            con.execute("INSERT INTO Access (fileID, userID) VALUES (?, ?)", [fileID, userID])
+
+        return self.index()
 
 
     @cherrypy.expose

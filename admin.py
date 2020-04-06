@@ -193,7 +193,7 @@ class BlindShareAdmin(object):
 
     @cherrypy.expose
     def uploadFile(self, upFile, userID):
-        if (upFile == "" or userID==""):
+        if (upFile.filename == "" or userID==""):
             return("<form action=\"index\">Field must no be empty<P><input value=\"back\" type=\"submit\"></form>")
 
         u_filename=upFile.filename
