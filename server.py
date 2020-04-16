@@ -13,8 +13,9 @@ class BlindShare(object):
         cherrypy.session.load()
         headers = cherrypy.request.headers
         print(headers)
+
         ClientCertSha1Fingerprint = str(headers.get('X-Ssl-Cert'))
-        ClientCertSha1Fingerprint = "123456"
+#        ClientCertSha1Fingerprint = "123456"
         cherrypy.session['ClientCertSha1Fingerprint'] = ClientCertSha1Fingerprint
         try:
             with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
@@ -26,16 +27,18 @@ class BlindShare(object):
                 isViewable, = con.execute("SELECT view FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
                 isUploadable, = con.execute("SELECT upload FROM Identities where certFingerprint=?", [ClientCertSha1Fingerprint]).fetchone()
         except:
-            pass
+        #    pass
+            cherrypy.session['ClientCertSha1Fingerprint'] = "Anonymous"
+            return self.index2()
 
         a = []
         a.append("<!DOCTYPE html> \n")
         a.append("<link rel=\"stylesheet\" href=\"static/server.css\">\n")
         a.append("<HTML><TITLE>Blind Share</TITLE>\n")
         a.append("<BODY>\n")
-        a.append("<H1>Blind Share - ver 0.5</H1>\n")
+        a.append("<H1>Blind Share - ver 0.6</H1>\n")
         a.append("<HR>\n")
-        a.append("Clients Cert sha1 Fingerprint: " + ClientCertSha1Fingerprint + "\n")
+        a.append("Clients Cert Fingerprint: " + ClientCertSha1Fingerprint + "\n")
         a.append("<HR>\n")
         a.append("<H2>Hallo " + helloUser + "</H2>\n")
         a.append("<BR>\n")
@@ -66,18 +69,22 @@ class BlindShare(object):
         a.append("<!DOCTYPE html> \n")
         a.append("<link rel=\"stylesheet\" href=\"static/server.css\">\n")
         a.append("<TITLE>Blind Share</TITLE>\n")
+        a.append("<HEAD>\n<style>\n")
+        a.append("DIV {\n")
+        a.append("text-align: center;")
+        a.append("}\n</style>\n")
         a.append("<BODY>\n")
-        a.append("<H1>Blind Share - ver 0.5</H1>\n")
+        a.append("<H1>Blind Share - ver 0.6</H1>\n")
         a.append("<HR>\n")
         headers = cherrypy.request.headers
         print(headers)
         ClientCertSha1Fingerprint = headers.get('X-Ssl-Cert')
-        a.append("Clients Cert sha1 Fingerprint: \n")
+        a.append("Clients Cert Fingerprint: \n")
         a.append(str(ClientCertSha1Fingerprint))
         a.append("<HR>\n")
         a.append("<BR>\n")
         a.append("<DIV>\n")
-        a.append("<B>This is a private Content Management Service site NOT a one-click hoster</B><BR>\n")
+        a.append("<H1>This is a private Content Management Service site NOT a one-click hoster</H1><BR>\n")
         a.append("<BR>\n")
         a.append("If you see this text, access to this site has not been granted or any sharing of public content has been disabled.\n")
         a.append("</DIV>\n")
