@@ -88,8 +88,10 @@ class BlindShareAdmin(object):
     ### future use --> ###        return self.errorMsg("User and Cert Hash") 
             return("<form action=\"index\">Fields User nor CertHash must no be empty<P><input value=\"back\" type=\"submit\" /></form>")
 
+        certHash = certhash.upper()
+
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
-            con.execute("INSERT OR REPLACE INTO Identities (name, certFingerprint, view, upload) VALUES (?, ?, ?, ?)", [user, certhash, 0, 0])
+            con.execute("INSERT OR REPLACE INTO Identities (name, certFingerprint, view, upload) VALUES (?, ?, ?, ?)", [user, certHash, 0, 0])
 
         with sqlite3.connect(cherrypy.request.app.config['cfg']['db']) as con:
             userid, = con.execute("SELECT userID from Identities WHERE name=?", [user]).fetchone()
