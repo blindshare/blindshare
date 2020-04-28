@@ -14,7 +14,7 @@ class BlindShare(object):
         headers = cherrypy.request.headers
         print(headers)
 
-        ClientCertSha1Fingerprint = str(headers.get('X-Ssl-Cert'))
+        ClientCertSha1Fingerprint = str(headers.get('X-Ssl-Cert')).upper()
 #        ClientCertSha1Fingerprint = "123456"
         cherrypy.session['ClientCertSha1Fingerprint'] = ClientCertSha1Fingerprint
         try:
@@ -149,8 +149,8 @@ class BlindShare(object):
         if (hashItem == "" or hashItem == None):
             return self.error(404)
 
-#        if (len(hashItem) > 64 or len(hashItem <= 63)):
-#           return self.error(404) 
+        if (len(hashItem) != 64):
+            return self.error(404) 
 
         ClientCertSha1Fingerprint = cherrypy.session.get('ClientCertSha1Fingerprint')
         print("### Client: " + str(ClientCertSha1Fingerprint) + " downloading: " + hashItem)
